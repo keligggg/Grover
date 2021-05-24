@@ -10,15 +10,15 @@ using Microsoft.Quantum.Core;
 using Microsoft.Quantum.Intrinsic;
 using Microsoft.Quantum.Simulation.Core;
 
-namespace Grover
+namespace GroversAlgorithm
 {
-    internal class __QsEntryPoint__SayHello : Microsoft.Quantum.EntryPointDriver.IEntryPoint
+    internal class __QsEntryPoint__factorisationDeGrover : Microsoft.Quantum.EntryPointDriver.IEntryPoint
     {
-        public string Name => "Grover.SayHello";
+        public string Name => "GroversAlgorithm.factorisationDeGrover";
         public string Summary => "";
-        public System.Collections.Generic.IEnumerable<System.CommandLine.Option> Options => new System.CommandLine.Option[] { };
-        public QVoid CreateArgument(System.CommandLine.Parsing.ParseResult parseResult) => QVoid.Instance;
-        public System.Threading.Tasks.Task<int> Submit(System.CommandLine.Parsing.ParseResult parseResult, Microsoft.Quantum.EntryPointDriver.AzureSettings settings) => Microsoft.Quantum.EntryPointDriver.Azure.Submit(global::Grover.SayHello.Info, this.CreateArgument(parseResult), settings);
-        public System.Threading.Tasks.Task<int> Simulate(System.CommandLine.Parsing.ParseResult parseResult, Microsoft.Quantum.EntryPointDriver.DriverSettings settings, string simulator) => Microsoft.Quantum.EntryPointDriver.Simulation<global::Grover.SayHello, QVoid, QVoid>.Simulate(this, this.CreateArgument(parseResult), settings, simulator);
+        public System.Collections.Generic.IEnumerable<System.CommandLine.Option> Options => new System.CommandLine.Option[] { Microsoft.Quantum.EntryPointDriver.Options.CreateOption<Int64>("--" + System.CommandLine.Parsing.StringExtensions.ToKebabCase("number"), "") };
+        public Int64 CreateArgument(System.CommandLine.Parsing.ParseResult parseResult) => parseResult.ValueForOption<Int64>("--" + System.CommandLine.Parsing.StringExtensions.ToKebabCase("number"));
+        public System.Threading.Tasks.Task<int> Submit(System.CommandLine.Parsing.ParseResult parseResult, Microsoft.Quantum.EntryPointDriver.AzureSettings settings) => Microsoft.Quantum.EntryPointDriver.Azure.Submit(global::GroversAlgorithm.factorisationDeGrover.Info, this.CreateArgument(parseResult), settings);
+        public System.Threading.Tasks.Task<int> Simulate(System.CommandLine.Parsing.ParseResult parseResult, Microsoft.Quantum.EntryPointDriver.DriverSettings settings, string simulator) => Microsoft.Quantum.EntryPointDriver.Simulation<global::GroversAlgorithm.factorisationDeGrover, Int64, Int64>.Simulate(this, this.CreateArgument(parseResult), settings, simulator);
     }
 }

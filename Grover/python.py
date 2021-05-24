@@ -4,7 +4,7 @@ qsharp.packages.add("Microsoft.Quantum.Numerics")
 qsharp.reload()
 import matplotlib.pyplot as plt
 import numpy as np
-from GroversTutorial import FactorizeWithGrovers2
+from GroversAlgorithm import factorisationDeGrover
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
     # Run N_Experiments times the Q# operation.
     for i in range(N_Experiments):
         print(f'Experiment: {i} of {N_Experiments}')
-        results.append(FactorizeWithGrovers2.simulate(number = number))
+        results.append(factorisationDeGrover.simulate(number = number))
 
     # Store the results in a dictionary
     for i in results:
