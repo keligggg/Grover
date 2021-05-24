@@ -1,4 +1,12 @@
-namespace GroversTutorial {
+//Programmation de l'algorithme de recherche de Grover sur un problème de factorisation
+//Science du numérique ISEP S2 05/2021
+//Antoine Jeanneney, Adrien Sallé, Kelig Lefeuvre
+//
+//dotnet run --number 
+//dotnet run --no-built
+
+namespace GroversAlgorithm {
+    //import des bibliothèques
     open Microsoft.Quantum.Canon;
     open Microsoft.Quantum.Intrinsic;
     open Microsoft.Quantum.Measurement;
@@ -9,109 +17,116 @@ namespace GroversTutorial {
     open Microsoft.Quantum.Preparation;
 
     @EntryPoint()
-    operation FactorizeWithGrovers2(number : Int) : Int {
-
-        let markingOracle = MarkDivisor(number, _, _);
-        let phaseOracle = ApplyMarkingOracleAsPhaseOracle(markingOracle, _);
+    operation factorisationDeGrover(number : Int, nbSolutions : Int) : Int {
+        //Définition des paramètres
+        //Definition de l'oracle
+        let Oracle = chercheDiviseur(number, _, _);
+        let phaseOracle = rebondDePhase(Oracle, _);
+        //nombre de bit du nombre a factoriser
         let size = BitSizeI(number);
-        let nSolutions = 4;
-        let nIterations = Round(PI() / 4.0 * Sqrt(IntAsDouble(size) / IntAsDouble(nSolutions)));
+        //nombre d'itération optimal pour rapprocher la probabilité des 100% de bonne réponse
+        let nbIterations = Round(PI() / 4.0 * Sqrt(IntAsDouble(size) / IntAsDouble(nbSolutions)));
 
-        use register = Qubit[size] {
-            RunGroversSearch(register, phaseOracle, nIterations);
-            let res = MultiM(register);
-            return ResultArrayAsInt(res);
-            // Check whether the result is correct.
+        //initialisation du registre des Qubits
+        use registre = Qubit[size] {
+            iterationsGrover(registre, phaseOracle, nbIterations);
+            let res = MultiM(registre);
+            let answer = ResultArrayAsInt(res);
+            Message($"The number {answer} is a factor of {number}.");
+            //return pour l'analyse en python
+            return answer;
         }
 
     }
 
-    @EntryPoint()
-    operation FactorizeWithGrovers(number : Int) : Unit {
-
-        // Define the oracle that for the factoring problem.
-        let markingOracle = MarkDivisor(number, _, _);
-        let phaseOracle = ApplyMarkingOracleAsPhaseOracle(markingOracle, _);
-        // Bit-size of the number to factorize.
-        let size = BitSizeI(number);
-        // Estimate of the number of solutions.
-        let nSolutions = 4;
-        // The number of iterations can be computed using the formula.
-        let nIterations = Round(PI() / 4.0 * Sqrt(IntAsDouble(size) / IntAsDouble(nSolutions)));
-
-        // Initialize the register to run the algorithm
-        use (register, output) = (Qubit[size], Qubit());
-        mutable isCorrect = false;
-        mutable answer = 0;
-        // Use a Repeat-Until-Succeed loop to iterate until the solution is valid.
-        repeat {
-            RunGroversSearch(register, phaseOracle, nIterations);
-            let res = MultiM(register);
-            set answer = BoolArrayAsInt(ResultArrayAsBoolArray(res));
-            // Check that if the result is a solution with the oracle.
-            markingOracle(register, output);
-            if MResetZ(output) == One and answer != 1 and answer != number {
-                set isCorrect = true;
-            }
-            ResetAll(register);
-        } until isCorrect;
-
-        // Print out the answer.
-        Message($"The number {answer} is a factor of {number}.");
-
-    }
-
-    operation MarkDivisor (
-        dividend : Int,
-        divisorRegister : Qubit[],
-        target : Qubit
-    ) : Unit is Adj+Ctl {
-        let size = BitSizeI(dividend);
-        use (dividendQubits, resultQubits) = (Qubit[size], Qubit[size]);
-        let xs = LittleEndian(dividendQubits);
-        let ys = LittleEndian(divisorRegister);
-        let result = LittleEndian(resultQubits);
-        within{
-            ApplyXorInPlace(dividend, xs);
-            DivideI(xs, ys, result);
-            ApplyToEachA(X, xs!);
-        }
-        apply{
-            Controlled X(xs!, target);
+    
+    /// # Summary
+    /// Exécute un nombre de fois donné l'algorithme de Grover
+    /// # Input
+    /// ## registre - Tableau de Qubit initialisés à l'état 0 
+    /// 
+    /// ## phaseOracle - Oracle de phase pour la tâche de Grover
+    /// 
+    /// ## iterations - Nombre d'itération correspondant à pi/4sqrt(nbElements/nbSolutions)
+    /// 
+    operation iterationsGrover(registre : Qubit[], phaseOracle : ((Qubit[]) => Unit is Adj), iterations : Int) : Unit {
+        //Initialisation du registre
+        ApplyToEach(H, registre);
+        //Loop sur le nombre d'iterations
+        for i in 1 .. iterations {
+            //Application de l'oracle de phase
+            phaseOracle(registre);
+            //Application de l'opérateur de diffussion de Grover
+            operateurDiffusion(registre);
         }
     }
 
-    operation PrepareUniformSuperpositionOverDigits(digitReg : Qubit[]) : Unit is Adj + Ctl {
-        PrepareArbitraryStateCP(ConstantArray(10, ComplexPolar(1.0, 0.0)), LittleEndian(digitReg));
-    }
-
-    operation ApplyMarkingOracleAsPhaseOracle(
-        markingOracle : (Qubit[], Qubit) => Unit is Adj,
-        register : Qubit[]
-    ) : Unit is Adj {
-        use target = Qubit();
-        within {
-            X(target);
-            H(target);
-        } apply {
-            markingOracle(register, target);
-        }
-    }
-
-    operation RunGroversSearch(register : Qubit[], phaseOracle : ((Qubit[]) => Unit is Adj), iterations : Int) : Unit {
-        ApplyToEach(H, register);
-        for _ in 1 .. iterations {
-            phaseOracle(register);
-            ReflectAboutUniform(register);
-        }
-    }
-
-    operation ReflectAboutUniform(inputQubits : Qubit[]) : Unit {
+    /// # Summary
+    /// Opérateur de diffusion de Grover, permet d'inverser les états --> effet de miroir sur les amplitudes des Qubits
+    /// # Input
+    /// ## inputQubits - Tableau de Qubit
+    /// 
+    operation operateurDiffusion(inputQubits : Qubit[]) : Unit {
         within {
             ApplyToEachA(H, inputQubits);
             ApplyToEachA(X, inputQubits);
         } apply {
             Controlled Z(Most(inputQubits), Tail(inputQubits));
+        }
+    }
+
+
+    //***Implémentation de l'oracle ***//
+
+    /// # Summary
+    /// Cherche un diviseur du nombre
+    /// # Input
+    /// ## dividende - Nombre de d'éléments
+    /// 
+    /// ## divisorregistre - Tableau de Qubit
+    /// 
+    /// ## target - Qubit cible qui donne le résultat, inversé si le nombre est un diviseur
+    /// 
+    operation chercheDiviseur (dividende : Int, divisorregistre : Qubit[], target : Qubit) : Unit is Adj+Ctl {
+        //taille du dividende
+        let size = BitSizeI(dividende);
+
+        //Allocation de deux Qubits pour le dividende et le résultat
+        use (dividendeQubits, resultQubits) = (Qubit[size], Qubit[size]);
+
+        //Utilisation du Little Endian pour utiliser DivideI
+        let reste = LittleEndian(dividendeQubits);
+        let diviseur = LittleEndian(divisorregistre);
+        let result = LittleEndian(resultQubits);
+
+        within{
+            //Encodage du dividende
+            ApplyXorInPlace(dividende, reste);
+            //Opération de division 
+            DivideI(reste, diviseur, result);
+            //Retourner tous les Qubits du reste
+            ApplyToEachA(X, reste!);
+        }
+        apply{
+            //Appliquez un Non controllé sur le reste et retourner l'état du Qubit cible si le reste est 0
+            Controlled X(reste!, target);
+        }
+    }
+
+    /// # Summary
+    /// Algorithme du rebond de phase - Transforme un oracle de marquage en oracle de phase
+    /// # Input
+    /// ## Oracle - Oracle de phase
+    /// 
+    /// ## registre - Tableau de Qubit
+    /// 
+    operation rebondDePhase(Oracle : (Qubit[], Qubit) => Unit is Adj, registre : Qubit[]) : Unit is Adj {
+        use target = Qubit();
+        within {
+            X(target);
+            H(target);
+        } apply {
+            Oracle(registre, target);
         }
     }
 }
