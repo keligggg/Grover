@@ -2,8 +2,9 @@
 //Science du numérique ISEP S2 05/2021
 //Antoine Jeanneney, Adrien Sallé, Kelig Lefeuvre
 //
-//dotnet run --number 
-//dotnet run --no-built
+//dotnet run --number _
+//dotnet run --no-build --number _
+//remplacer _ par les nombres
 
 namespace GroversAlgorithm {
     //import des bibliothèques
@@ -17,9 +18,10 @@ namespace GroversAlgorithm {
     open Microsoft.Quantum.Preparation;
 
     @EntryPoint()
-    operation factorisationDeGrover(number : Int, nbSolutions : Int) : Int {
+    operation factorisationDeGrover(number : Int) : Int {
         //Définition des paramètres
         //Definition de l'oracle
+        let nbSolutions =4;
         let Oracle = chercheDiviseur(number, _, _);
         let phaseOracle = rebondDePhase(Oracle, _);
         //nombre de bit du nombre a factoriser

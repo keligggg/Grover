@@ -11,9 +11,10 @@ def main():
 
     # Instantiate variables
     frequency =  {}
-    N_Experiments = 1000
+    N_Experiments = 100
     results = []
     number = 21
+    nbSolution = 4
 
     # Run N_Experiments times the Q# operation.
     for i in range(N_Experiments):
@@ -37,8 +38,8 @@ def main():
     plt.bar(frequency.keys(), frequency.values())
     plt.xlabel("Output")
     plt.ylabel("Frequency of the outputs")
-    plt.title("Outputs for Grover's factoring. N=21, 1000 iterations")
-    plt.xticks(np.arange(1, 33, 2.0))
+    plt.title(f"Outputs for Grover's factoring. N={number}, {N_Experiments} iterations")
+    plt.xticks(np.arange(1, number*2, 2.0))
     plt.show()
 
 if __name__ == "__main__":
